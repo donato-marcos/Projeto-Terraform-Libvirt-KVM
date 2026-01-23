@@ -142,7 +142,7 @@ Cada módulo contém seu próprio `README.md` com:
 - Limitações técnicas
 - Exemplos de uso
 
-Veja:
+Módulos:
 - [`modules/network/README.md`](modules/network/README.md)
 - [`modules/volume/README.md`](modules/volume/README.md)
 - [`modules/cloudinit/README.md`](modules/cloudinit/README.md)
@@ -150,7 +150,8 @@ Veja:
 - [`modules/domain_win/README.md`](modules/domain_win/README.md)
 - [`modules/orchestration/README.md`](modules/orchestration/README.md)
 
-- - [`environment/lab/README.md`](environment/lab/README.md)
+Environments:
+- [`environments/lab/README.md`](environment/lab/README.md)
 
 ## 🧪 Casos de uso típicos
 
