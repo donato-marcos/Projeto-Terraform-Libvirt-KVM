@@ -151,7 +151,7 @@ Módulos:
 - [`modules/orchestration/README.md`](modules/orchestration/README.md)
 
 Environments:
-- [`environments/lab/README.md`](environment/lab/README.md)
+- [`environments/lab/README.md`](environments/lab/README.md)
 
 ## 🧪 Casos de uso típicos
 
