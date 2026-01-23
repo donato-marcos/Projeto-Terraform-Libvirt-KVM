@@ -1,0 +1,30 @@
+network:
+  version: 2
+  ethernets:
+%{ for i, net in networks ~}
+    enp${i+1}s0:
+      dhcp4: ${net.wait_for_lease && net.ipv4_address == null ? "true" : "false"}
+      dhcp6: ${net.wait_for_lease && net.ipv6_address == null ? "true" : "false"}
+%{ if net.ipv4_address != null ~}
+      addresses:
+        - ${net.ipv4_address}/${net.ipv4_prefix}
+%{ endif ~}
+%{ if net.ipv4_gateway != null ~}
+      routes:
+        - to: 0.0.0.0/0
+          via: ${net.ipv4_gateway}
+%{ endif ~}
+%{ if net.ipv6_address != null ~}
+      addresses:
+        - ${net.ipv6_address}/${net.ipv6_prefix}
+%{ endif ~}
+%{ if net.ipv6_gateway != null ~}
+      routes:
+        - to: "::/0"
+          via: ${net.ipv6_gateway}
+%{ endif ~}
+%{ if length(net.dns_servers) > 0 ~}
+      nameservers:
+        addresses: ${jsonencode(net.dns_servers)}
+%{ endif ~}
+%{ endfor ~}
