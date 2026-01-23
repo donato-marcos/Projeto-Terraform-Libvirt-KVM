@@ -147,8 +147,10 @@ Veja:
 - [`modules/volume/README.md`](modules/volume/README.md)
 - [`modules/cloudinit/README.md`](modules/cloudinit/README.md)
 - [`modules/domain_linux/README.md`](modules/domain_linux/README.md)
-- [`modules/domain_windows/README.md`](modules/domain_windows/README.md)
+- [`modules/domain_win/README.md`](modules/domain_win/README.md)
 - [`modules/orchestration/README.md`](modules/orchestration/README.md)
+
+- - [`environment/lab/README.md`](environment/lab/README.md)
 
 ## 🧪 Casos de uso típicos
 
