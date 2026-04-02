@@ -1,44 +1,48 @@
 
-# Módulo `cloudinit`
+# `cloudinit` Module
 
-Gera discos ISO de Cloud-init para máquinas virtuais Linux e VyOS, com base em templates específicos por sistema operacional.
+Generates Cloud-init ISO disks for Linux and VyOS virtual machines, based on OS-specific templates.
 
-## Responsabilidade
+## Responsibility
 
-Este módulo:
-- Renderiza três arquivos de configuração por VM:
-  - `user-data`
-  - `meta-data`
-  - `network-config`
-- Gera um disco temporário com `libvirt_cloudinit_disk`
-- Persiste esse disco como volume Libvirt no storage pool especificado (`<vm_name>-cloudinit.iso`)
+This module:
 
-## O que este módulo **não faz**
-- Validar se `os_type` é `"linux"` ou `"vyos"` — falha se o template não existir
-- Filtrar VMs por tipo — espera que o chamador já tenha feito isso
-- Tratar VMs Windows — elas **não devem ser passadas** para este módulo
-- Garantir que os campos de rede estejam completos — essa responsabilidade é dos templates
+* Renders three configuration files per VM:
 
-## Entrada esperada
+  * `user-data`
+  * `meta-data`
+  * `network-config`
+* Generates a temporary disk using `libvirt_cloudinit_disk`
+* Persists this disk as a Libvirt volume in the specified storage pool (`<vm_name>-cloudinit.iso`)
 
-A variável `vms` deve ser um mapa onde cada VM contém:
+## What this module **does not do**
 
-| Campo | Tipo | Obrigatório | Observação |
-|------|------|-------------|-----------|
-| `os_type` | `string` | Sim | Deve ser `"linux"` ou `"vyos"` |
-| `hostname` | `string` | Sim | Usado em `meta-data` e `user-data` |
-| `ssh_public` | `object` | Sim | Com `type`, `key`, `host_origin` |
-| `networks` | `list(object)` | Sim | Mesma estrutura usada em `vm.auto.tfvars` |
+* Validate whether `os_type` is `"linux"` or `"vyos"` — it will fail if the template does not exist
+* Filter VMs by type — expects the caller to handle this
+* Handle Windows VMs — they **must not be passed** to this module
+* Ensure network fields are complete — this is the responsibility of the templates
 
-> ⚠️ **Requisito crítico**:  
-> Os templates devem existir em:  
-> - `templates/linux/`  
-> - `templates/vyos/`  
-> Caso contrário, o Terraform falhará com "template not found".
+## Expected Input
 
-## Estrutura de templates
+The `vms` variable must be a map where each VM contains:
 
-O módulo espera os seguintes arquivos:
+| Field        | Type           | Required | Notes                                   |
+| ------------ | -------------- | -------- | --------------------------------------- |
+| `os_type`    | `string`       | Yes      | Must be `"linux"` or `"vyos"`           |
+| `hostname`   | `string`       | Yes      | Used in `meta-data` and `user-data`     |
+| `ssh_public` | `object`       | Yes      | Includes `type`, `key`, `host_origin`   |
+| `networks`   | `list(object)` | Yes      | Same structure used in `vm.auto.tfvars` |
+
+> ⚠️ **Critical requirement**:
+> Templates must exist in:
+>
+> * `templates/linux/`
+> * `templates/vyos/`
+>   Otherwise, Terraform will fail with "template not found".
+
+## Template Structure
+
+The module expects the following files:
 
 ```
 templates/
@@ -52,11 +56,11 @@ templates/
     └── network-config.yaml.tftpl
 ```
 
-Cada template recebe exatamente os dados fornecidos em `vms[*]`. Portanto, deve tratar campos opcionais (ex: `ipv4_address == null` → configurar DHCP).
+Each template receives exactly the data provided in `vms[*]`. Therefore, it must handle optional fields (e.g., `ipv4_address == null` → configure DHCP).
 
-## Exemplo de uso
+## Example Usage
 
-```hcl
+```hcl id="q3r8n1"
 locals {
   cloudinit_vms = {
     for name, vm in var.vms : name => vm
@@ -82,19 +86,20 @@ module "cloudinit" {
 }
 ```
 
-> **Importante**: o filtro condicional (`if ...`) é **obrigatório** se o mapa original contém VMs Windows.
+> **Important**: the conditional filter (`if ...`) is **mandatory** if the original map contains Windows VMs.
 
-## Saídas
+## Outputs
 
-- `cloudinit_volumes`: mapa indexado pelo nome da VM, contendo:
-  - `name`: nome do volume ISO (ex: `"SdnsDMZ01-cloudinit.iso"`)
-  - `pool`: nome do storage pool
+* `cloudinit_volumes`: map indexed by VM name, containing:
 
-Essa saída é usada pelo módulo `domain_linux` para anexar o ISO como dispositivo de configuração.
+  * `name`: ISO volume name (e.g., `"SdnsDMZ01-cloudinit.iso"`)
+  * `pool`: storage pool name
 
-## Limitações conhecidas
+This output is used by the `domain_linux` module to attach the ISO as a configuration device.
 
-- Não suporta múltiplas chaves SSH por VM (apenas um objeto `ssh_public`)
-- Não gera ISOs para VMs sem `os_type` válido
-- Depende totalmente da correção e robustez dos templates fornecidos
-- Não valida semanticamente a configuração de rede antes da renderização
+## Known Limitations
+
+* Does not support multiple SSH keys per VM (only a single `ssh_public` object)
+* Does not generate ISOs for VMs without a valid `os_type`
+* Fully depends on the correctness and robustness of the provided templates
+* Does not perform semantic validation of network configuration before rendering
