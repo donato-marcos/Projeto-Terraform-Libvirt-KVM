@@ -1,0 +1,58 @@
+#cloud-config
+
+ssh_pwauth: true
+
+hostname: ${lower(hostname)}
+fqdn: ${lower(hostname)}.teste.local
+
+manage_etc_hosts: true
+
+
+#chpasswd:
+#  list: |
+#    root:$6$icCsrgPFmUJ7y40/$2TligMlpR5P2FiFsjrxNZmmYsBmOkpd0sJ4Am/8x6Ko8grcjVf08ZKeUPgiGaNohkZSJrtqVCLKBxGZ6vDY4e1
+#  expire: false
+
+
+users:
+  - name: ansible
+    gecos: "Usuário de Laboratório"
+    groups: [wheel, sudo, admin]
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: false
+    passwd: "$6$hTsm9OSnl0JnaIL/$h.UQHqWJaUkU9TEDrZ13xfkampt5imBmM7eap60MIW79cgE.qXj/JDv20RtbDM1iDFoR7UW8VWDJ1xIGQ9LMh."
+    ssh_authorized_keys:
+      - ${ssh_public.type} ${ssh_public.key} ${ssh_public.host_origin}
+
+package_update: true
+#package_upgrade: true
+
+timezone: America/Sao_Paulo
+locale: en_US.UTF-8
+keyboard:
+  layout: br
+  model: pc105
+  variant: abnt2
+
+packages:
+  - vim
+  - curl
+  - wget
+  - net-tools
+  - git
+  - tmux
+  - qemu-guest-agent
+  - bash-completion
+  - python3
+
+
+runcmd:
+  - [ systemctl, enable, --now, qemu-guest-agent.service ]
+  - [ timedatectl, set-timezone, America/Sao_Paulo ]
+  - |
+    #!/bin/bash
+    if [-f /etc/redhat-release ]; then
+      localectl set-locale LANG=en_US.UTF-8
+      localectl set-keymap br-abnt2
+    fi

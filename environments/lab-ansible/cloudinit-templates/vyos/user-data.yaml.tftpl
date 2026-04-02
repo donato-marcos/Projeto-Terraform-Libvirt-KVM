@@ -1,0 +1,62 @@
+#cloud-config
+vyos_config_commands:
+  # Hostname
+  - set system host-name '${lower(hostname)}'
+
+  # Usuário com chave SSH
+  - set system login user ansible authentication encrypted-password '$6$hTsm9OSnl0JnaIL/$h.UQHqWJaUkU9TEDrZ13xfkampt5imBmM7eap60MIW79cgE.qXj/JDv20RtbDM1iDFoR7UW8VWDJ1xIGQ9LMh.'
+  - set system login user ansible authentication public-keys ansible_key.pub key '${ssh_public.key}'
+  - set system login user ansible authentication public-keys ansible_key.pub type '${ssh_public.type}'
+
+%{ for i, net in networks ~}
+  # Interface eth${i}
+  - set interfaces ethernet eth${i} description '${net.name}'
+
+  # --- IPv4 ---
+%{ if net.wait_for_lease && net.ipv4_address == null ~}
+  - set interfaces ethernet eth${i} address 'dhcp'
+%{ else ~}
+  - delete interfaces ethernet eth${i} address 'dhcp'
+%{ if net.ipv4_address != null ~}
+  - set interfaces ethernet eth${i} address '${net.ipv4_address}/${net.ipv4_prefix}'
+%{ endif ~}
+%{ endif ~}
+
+  # --- IPv6 ---
+%{ if net.wait_for_lease && net.ipv6_address == null ~}
+  - set interfaces ethernet eth${i} address 'dhcpv6'
+%{ else ~}
+  - delete interfaces ethernet eth${i} address 'dhcpv6'
+%{ if net.ipv6_address != null ~}
+  - set interfaces ethernet eth${i} address '${net.ipv6_address}/${net.ipv6_prefix}'
+%{ endif ~}
+%{ endif ~}
+%{ endfor ~}
+
+  # --- Gateway ---
+%{ for i, net in networks ~}
+%{ if net.ipv4_gateway != null ~}
+  - set protocols static route 0.0.0.0/0 next-hop '${net.ipv4_gateway}'
+%{ endif ~}
+%{ if net.ipv6_gateway != null ~}
+  - set protocols static route '::/0' next-hop '${net.ipv6_gateway}'
+%{ endif ~}
+%{ endfor ~}
+
+%{ if hostname == "Nfirewall03" ~}
+  # --- Configuração de Firewall/NAT ---
+  
+  # Habilitar forwarding IP
+  - set system ip forwarding
+  
+  # Configurar NAT (masquerade) para todas as redes internas
+  - set nat source rule 10 outbound-interface name 'eth0'
+  - set nat source rule 10 translation address 'masquerade'
+  
+  # Rotas de retorno para redes internas
+  - set protocols static route 10.20.200.0/24 next-hop '10.21.1.3'
+  - set protocols static route 10.20.100.0/24 next-hop '10.21.1.3'
+  - set protocols static route 10.20.10.0/24 next-hop '10.21.1.3'
+  - set protocols static route 10.20.11.0/24 next-hop '10.21.1.3'
+  
+%{ endif ~}
