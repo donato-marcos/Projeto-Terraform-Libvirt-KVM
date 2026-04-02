@@ -1,53 +1,55 @@
 
-# Módulo `network`
+# `network` Module
 
-Cria redes virtuais Libvirt com suporte opcional a IPv4 e IPv6, DHCP e modo de encaminhamento configurável.
+Creates Libvirt virtual networks with optional support for IPv4 and IPv6, DHCP, and configurable forwarding mode.
 
-## Responsabilidade
+## Responsibility
 
-Este módulo:
-- Cria redes Libvirt com bridge dedicada (`br-<nome>`, truncada em 15 caracteres)
-- Configura endereçamento IPv4 **ou** IPv6 (ou ambos)
-- Ativa DHCP condicionalmente por protocolo
-- Define modo de encaminhamento: `"nat"` ou `"isolated"`
-- Controla inicialização automática (`autostart`)
+This module:
 
-## O que este módulo **não faz**
-- Validar se o valor de `mode` é válido (aceita qualquer string; valores inválidos causam erro no provider)
-- Garantir unicidade de nomes de rede (colisões não são detectadas)
-- Criar redes sem pelo menos um bloco de IP (IPv4 ou IPv6) — isso causa falha no provider Libvirt
-- Truncar nomes de rede (apenas o nome da bridge é truncado)
+* Creates Libvirt networks with a dedicated bridge (`br-<name>`, truncated to 15 characters)
+* Configures IPv4 **and/or** IPv6 addressing
+* Enables DHCP conditionally per protocol
+* Defines forwarding mode: `"nat"` or `"isolated"`
+* Controls automatic startup (`autostart`)
 
-## Entrada esperada
+## What this module **does not do**
 
-A variável `networks` deve ser uma lista de objetos com os seguintes campos:
+* Validate whether the `mode` value is valid (accepts any string; invalid values will cause provider errors)
+* Guarantee uniqueness of network names (collisions are not detected)
+* Create networks without at least one IP block (IPv4 or IPv6) — this will cause a Libvirt provider failure
+* Truncate network names (only the bridge name is truncated)
 
-| Campo | Tipo | Obrigatório | Padrão | Observação |
-|------|------|-------------|--------|-----------|
-| `name` | `string` | Sim | — | Nome da rede; usado como identificador e no domínio DNS interno |
-| `mode` | `string` | Sim | — | `"nat"` habilita forward e `"isolated"` desativa |
-| `autostart` | `bool` | Sim | — | Se a rede inicia com o host |
-| `ipv4_address` | `string` | Condicional | — | Endereço IPv4 da rede (ex: `"192.168.100.1"`) |
-| `ipv4_prefix` | `number` | Se IPv4 ativo | — | Prefixo CIDR (0–32) |
-| `ipv4_dhcp_enabled` | `bool` | Não | `false` | Ativa DHCP IPv4 |
-| `ipv4_dhcp_start` / `end` | `string` | Se DHCP IPv4 ativo | — | Faixa de concessão |
-| `ipv6_address` | `string` | Condicional | — | Endereço IPv6 (ex: `"fd00::1"`) |
-| `ipv6_prefix` | `number` | Se IPv6 ativo | — | Prefixo CIDR (0–128) |
-| `ipv6_dhcp_enabled` | `bool` | Não | `false` | Ativa DHCP IPv6 |
-| `ipv6_dhcp_start` / `end` | `string` | Se DHCP IPv6 ativo | — | Faixa de concessão |
+## Expected Input
 
-> ⚠️ **Requisito crítico**:  
-> Pelo menos **um** dos blocos (`ipv4_address` ou `ipv6_address`) deve ser definido.  
-> Caso contrário, o recurso `libvirt_network` falhará com "no IP addresses defined".
+The `networks` variable must be a list of objects with the following fields:
 
-## Comportamentos técnicos
+| Field                     | Type     | Required             | Default | Notes                                                    |
+| ------------------------- | -------- | -------------------- | ------- | -------------------------------------------------------- |
+| `name`                    | `string` | Yes                  | —       | Network name; used as identifier and internal DNS domain |
+| `mode`                    | `string` | Yes                  | —       | `"nat"` enables forwarding and `"isolated"` disables it  |
+| `autostart`               | `bool`   | Yes                  | —       | Whether the network starts with the host                 |
+| `ipv4_address`            | `string` | Conditional          | —       | IPv4 network address (e.g., `"192.168.100.1"`)           |
+| `ipv4_prefix`             | `number` | If IPv4 enabled      | —       | CIDR prefix (0–32)                                       |
+| `ipv4_dhcp_enabled`       | `bool`   | No                   | `false` | Enables IPv4 DHCP                                        |
+| `ipv4_dhcp_start` / `end` | `string` | If IPv4 DHCP enabled | —       | Lease range                                              |
+| `ipv6_address`            | `string` | Conditional          | —       | IPv6 address (e.g., `"fd00::1"`)                         |
+| `ipv6_prefix`             | `number` | If IPv6 enabled      | —       | CIDR prefix (0–128)                                      |
+| `ipv6_dhcp_enabled`       | `bool`   | No                   | `false` | Enables IPv6 DHCP                                        |
+| `ipv6_dhcp_start` / `end` | `string` | If IPv6 DHCP enabled | —       | Lease range                                              |
 
-- **Nome da bridge**: gerado como `br-${name}`, truncado em **15 caracteres** (limite do kernel Linux)
-- **Forwarding**: ativado apenas se `mode != "isolated"`
-- **Domínio DNS**: sempre definido como `name = net.name`
-- **DHCP**: incluído somente se `*_dhcp_enabled == true` e os campos `start`/`end` estiverem presentes
+> ⚠️ **Critical requirement**:
+> At least **one** of the blocks (`ipv4_address` or `ipv6_address`) must be defined.
+> Otherwise, the `libvirt_network` resource will fail with "no IP addresses defined".
 
-## Exemplo de uso
+## Technical Behavior
+
+* **Bridge name**: generated as `br-${name}`, truncated to **15 characters** (Linux kernel limit)
+* **Forwarding**: enabled only if `mode != "isolated"`
+* **DNS domain**: always set as `name = net.name`
+* **DHCP**: included only if `*_dhcp_enabled == true` and `start`/`end` fields are provided
+
+## Example Usage
 
 ```hcl
 module "network" {
@@ -56,17 +58,18 @@ module "network" {
 }
 ```
 
-## Saídas
+## Outputs
 
-- `networks`: mapa indexado pelo nome da rede, contendo:
-  - `id`: UUID do Libvirt
-  - `name`: nome da rede
-  - `bridge`: nome real da interface bridge criada (ex: `"br-wan"`)
+* `networks`: map indexed by network name, containing:
 
-Útil para depuração ou integração com outros módulos (ex: vincular interfaces de VM).
+  * `id`: Libvirt UUID
+  * `name`: network name
+  * `bridge`: actual bridge interface name created (e.g., `"br-wan"`)
 
-## Limitações conhecidas
+Useful for debugging or integration with other modules (e.g., attaching VM interfaces).
 
-- Nomes de rede longos (>12 caracteres) geram bridges truncadas (ex: `br-clientes_ti-net` → `br-clientes_ti-`)
-- Não há validação de consistência (ex: prefixo IPv4 fora de [0,32])
-- Modo `"isolated"` desativa totalmente o forward; outros modos usam o padrão do Libvirt (`nat`)
+## Known Limitations
+
+* Long network names (>12 characters) result in truncated bridges (e.g., `br-clientes_ti-net` → `br-clientes_ti-`)
+* No consistency validation (e.g., IPv4 prefix outside [0,32])
+* `"isolated"` mode fully disables forwarding; other modes use Libvirt defaults (`nat`)

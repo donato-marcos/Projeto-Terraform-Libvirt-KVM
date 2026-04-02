@@ -1,40 +1,42 @@
 
-# Ambiente `lab`
+# `lab` Environment
 
-Ponto de entrada do Terraform para provisionamento de infraestrutura de laboratório com Libvirt/KVM.
+Terraform entry point for provisioning lab infrastructure using Libvirt/KVM.
 
-## Responsabilidade
+## Responsibility
 
-Este ambiente:
-- Configura o provider Libvirt com URI personalizável (`qemu:///system` por padrão)
-- Carrega variáveis de infraestrutura e segredos via arquivos `.auto.tfvars`
-- Invoca o módulo `orchestration` para criar toda a infraestrutura
-- Não cria recursos diretamente — delega tudo ao orquestrador
+This environment:
 
-## Estrutura de arquivos esperada
+* Configures the Libvirt provider with a customizable URI (`qemu:///system` by default)
+* Loads infrastructure variables and secrets via `.auto.tfvars` files
+* Invokes the `orchestration` module to create the entire infrastructure
+* Does not create resources directly — delegates everything to the orchestrator
 
-Após clonar o repositório, crie os seguintes arquivos a partir dos modelos:
+## Expected File Structure
+
+After cloning the repository, create the following files from the templates:
 
 ```bash
 cd environments/lab
-cp vm.auto.tfvars.exemplo vm.auto.tfvars
-cp networks.auto.tfvars.exemplo networks.auto.tfvars
-cp secrets.auto.tfvars.exemplo secrets.auto.tfvars
+cp vm.auto.tfvars.example vm.auto.tfvars
+cp networks.auto.tfvars.example networks.auto.tfvars
+cp secrets.auto.tfvars.example secrets.auto.tfvars
 ```
 
-### Arquivos obrigatórios
+### Required Files
 
-| Arquivo | Propósito |
-|--------|----------|
-| `secrets.auto.tfvars` | Chave SSH pública, URI do Libvirt, storage pool e caminho das imagens base |
-| `networks.auto.tfvars` | Definição de redes (NAT, isoladas, IPv4/IPv6, DHCP) |
-| `vm.auto.tfvars` | Especificação completa de cada VM (Linux, Windows, VyOS) |
+| File                   | Purpose                                                        |
+| ---------------------- | -------------------------------------------------------------- |
+| `secrets.auto.tfvars`  | Public SSH key, Libvirt URI, storage pool, and base image path |
+| `networks.auto.tfvars` | Network definitions (NAT, isolated, IPv4/IPv6, DHCP)           |
+| `vm.auto.tfvars`       | Full specification of each VM (Linux, Windows, VyOS)           |
 
-> ⚠️ **Requisito crítico**:  
-> - O `storage_pool` e `image_directory` devem apontar para o **mesmo diretório físico**  
-> - O storage pool `iso` deve existir com `virtio-win-0.1.285.iso` (para VMs Windows)
+> ⚠️ **Critical requirement**:
+>
+> * `storage_pool` and `image_directory` must point to the **same physical directory**
+> * The `iso` storage pool must exist and contain `virtio-win-0.1.285.iso` (for Windows VMs)
 
-## Fluxo de execução
+## Execution Flow
 
 ```bash
 cd environments/lab
@@ -43,15 +45,16 @@ terraform validate
 terraform apply
 ```
 
-O plano criará:
-- Redes virtuais
-- Volumes de disco (com ou sem backing store)
-- ISOs de Cloud-init (apenas para Linux/VyOS)
-- Domínios KVM (com configurações específicas por sistema operacional)
+The plan will create:
 
-## Saídas úteis
+* Virtual networks
+* Disk volumes (with or without backing store)
+* Cloud-init ISOs (Linux/VyOS only)
+* KVM domains (with OS-specific configurations)
 
-A saída `provisioned_vms` fornece uma visão consolidada da infraestrutura criada, ideal para geração de inventário Ansible:
+## Useful Outputs
+
+The `provisioned_vms` output provides a consolidated view of the created infrastructure, ideal for generating an Ansible inventory:
 
 ```json
   "SdnsDMZ03" = {
@@ -83,24 +86,26 @@ A saída `provisioned_vms` fornece uma visão consolidada da infraestrutura cria
   }
 ```
 
-## Limitações conhecidas
+## Known Limitations
 
-- Não valida existência de imagens base antes da aplicação
-- Não verifica redes já existentes
-- Não verifica se redes referenciadas nas VMs foram definidas em `networks.auto.tfvars`
-- Requer que todos os templates de Cloud-init estejam presentes nos diretórios corretos
-- Versão do provider Libvirt fixada em `= 0.9.1` (não compatível com versões mais antigas sem ajuste)
+* Does not validate the existence of base images before apply
+* Does not check for existing networks
+* Does not verify whether networks referenced in VMs are defined in `networks.auto.tfvars`
+* Requires all Cloud-init templates to be present in the correct directories
+* Libvirt provider version is pinned to `= 0.9.1` (not compatible with older versions without adjustments)
 
-## Exemplo de uso típico
+## Typical Use Case
 
-Este ambiente foi projetado para:
-- Laboratórios de estudo (redes, segurança, automação)
-- Simulação de topologias com firewall, servidores, estações
-- Ambientes heterogêneos (Linux, Windows, VyOS)
-- Testes de dual-stack IPv4/IPv6
+This environment is designed for:
 
-Suporta:
-- Discos com backing store (imagens base qcow2)
-- Redes isoladas e NAT
-- Cloud-init para Linux/VyOS
-- Drivers VirtIO para Windows via CD-ROM
+* Study labs (networking, security, automation)
+* Simulation of topologies with firewalls, servers, and workstations
+* Heterogeneous environments (Linux, Windows, VyOS)
+* Dual-stack IPv4/IPv6 testing
+
+Supports:
+
+* Disks with backing store (qcow2 base images)
+* Isolated and NAT networks
+* Cloud-init for Linux/VyOS
+* VirtIO drivers for Windows via CD-ROM

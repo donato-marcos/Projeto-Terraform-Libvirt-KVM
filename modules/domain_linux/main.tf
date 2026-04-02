@@ -94,13 +94,19 @@ resource "libvirt_domain" "this" {
     # --- Interfaces ---
     interfaces = [
       for net in each.value.networks : {
-        source = {
-          network = {
-            network = var.networks_map[net.name].name
-          }
+        source = (
+          startswith(net.name, "bridge") || 
+          startswith(net.name, "br")
+        ) ? {
+          bridge = { bridge = net.name }
+        } : {
+          network = { network = var.networks_map[net.name].name }
         }
         model = { type = "virtio" }
-        wait_for_ip = net.wait_for_lease ? {
+        wait_for_ip = (
+          !(startswith(net.name, "bridge") || startswith(net.name, "br")) &&
+          net.wait_for_lease
+        ) ? {
           timeout = 300
           source  = "lease"
         } : null

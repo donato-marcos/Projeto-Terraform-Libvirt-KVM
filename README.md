@@ -1,85 +1,91 @@
 
-# Projeto Terraform Libvirt – Infraestrutura de Laboratório
+# Terraform Libvirt Project – Lab Infrastructure
 
-Este projeto provisiona infraestrutura virtualizada completa com **Terraform + Libvirt/KVM**, voltada para **ambientes de laboratório heterogêneos** com Linux, Windows e VyOS, redes IPv4/IPv6.
+This project provisions a complete virtualized infrastructure using **Terraform + Libvirt/KVM**, designed for **heterogeneous lab environments** with Linux, Windows, and VyOS, supporting IPv4/IPv6 networking.
 
-## 🎯 Objetivo
+## 🎯 Objective
 
-Permitir a criação **declarativa e reprodutível** de topologias complexas — incluindo firewalls, servidores, estações, redes isoladas/NAT — com suporte a:
-- Cloud-init para Linux/VyOS (chave SSH, rede estática, hostname)
-- Drivers VirtIO para Windows via ISO embutido
-- Discos com backing store (imagens base qcow2)
-- Dual-stack IPv4/IPv6
+Enable **declarative and reproducible** creation of complex topologies — including firewalls, servers, workstations, isolated/NAT networks — with support for:
 
-## 🏗 Arquitetura
+* Cloud-init for Linux/VyOS (SSH key, static networking, hostname)
+* VirtIO drivers for Windows via embedded ISO
+* Disks with backing store (base qcow2 images)
+* Dual-stack IPv4/IPv6
 
-O projeto é **modular** e **orientado a environments**:
+## 🏗 Architecture
+
+The project is **modular** and **environment-oriented**:
 
 ```
-projeto_terraform-libvirt/
-├── modules/               # Módulos reutilizáveis
-│   ├── orchestration      # Orquestrador central
-│   ├── network            # Redes Libvirt (IPv4/IPv6, DHCP, NAT)
-│   ├── volume             # Volumes de disco (qcow2/raw, backing store)
-│   ├── cloudinit          # ISOs de Cloud-init (Linux/VyOS)
-│   ├── domain_linux       # Domínios KVM para Linux/VyOS (EFI, TPM, SMM)
-│   └── domain_windows     # Domínios KVM para Windows (Hyper-V, localtime, QXL)
+terraform-libvirt-project/
+├── modules/               # Reusable modules
+│   ├── orchestration      # Central orchestrator
+│   ├── network            # Libvirt networks (IPv4/IPv6, DHCP, NAT)
+│   ├── volume             # Disk volumes (qcow2/raw, backing store)
+│   ├── cloudinit          # Cloud-init ISOs (Linux/VyOS)
+│   ├── domain_linux       # KVM domains for Linux/VyOS (EFI, TPM, SMM)
+│   └── domain_windows     # KVM domains for Windows (Hyper-V, localtime, QXL)
 │
 └── environments/
-    └── lab/               # Ambiente de exemplo (laboratório)
-        ├── *.auto.tfvars.exemplo  # Modelos de configuração
-        └── README.md      # Instruções específicas do ambiente
+    └── lab/               # Example environment (lab)
+        ├── *.auto.tfvars.example  # Configuration templates
+        └── README.md      # Environment-specific instructions
 ```
 
-### Fluxo de execução (orquestração)
+### Execution flow (orchestration)
 
-1. **Redes** → `module.network`
-2. **Volumes** → `module.volume` (todos os discos de todas as VMs)
-3. **Cloud-init** → `module.cloudinit` (**apenas** se `os_type ∈ ["linux", "vyos"]`)
-4. **Domínios Linux/VyOS** → `module.domain_linux` (com EFI, TPM, Cloud-init)
-5. **Domínios Windows** → `module.domain_win` (com Hyper-V, drivers VirtIO, relógio em `localtime`)
+1. **Networks** → `module.network`
+2. **Volumes** → `module.volume` (all disks for all VMs)
+3. **Cloud-init** → `module.cloudinit` (**only** if `os_type = ["linux", "vyos"]`)
+4. **Linux/VyOS Domains** → `module.domain_linux` (with EFI, TPM, Cloud-init)
+5. **Windows Domains** → `module.domain_win` (with Hyper-V, VirtIO drivers, `localtime` clock)
 
-> Cada etapa usa `depends_on` para garantir ordem, mesmo sem referências diretas.
+> Each step uses `depends_on` to ensure proper ordering, even without direct references.
 
-## 🚀 Como usar
+## 🚀 How to Use
 
-### Pré-requisitos
+### Prerequisites
 
-- **Libvirt/KVM** instalado e rodando (`libvirtd`)
-- **Storage pool `default`** apontando para um diretório com imagens base (ex: `/home/mdonato/vm`)
-- **Storage pool `iso`** contendo:
-  - `virtio-win-0.1.285.iso` (obrigatório para Windows)
-- **Imagens base** no `image_directory` (ex: Ubuntu Cloud, Rocky, Win2022 custom)
-- **Templates de Cloud-init** em `modules/cloudinit/templates/{linux,vyos}`
+* **Libvirt/KVM** installed and running (`libvirtd`)
+* **`default` storage pool** pointing to a directory with base images (e.g., `/home/mdonato/vm`)
+* **`iso` storage pool** containing:
 
-### Passo a passo
+  * `virtio-win-0.1.285.iso` (required for Windows)
+* **Base images** in `image_directory` (e.g., Ubuntu Cloud, Rocky, custom Win2022)
+* **Cloud-init templates** in `modules/cloudinit/templates/{linux,vyos}`
 
-1. Clone o repositório  
-2. Acesse o ambiente:
+### Step-by-step
+
+1. Clone the repository
+2. Navigate to the environment:
+
    ```bash
    cd environments/lab
    ```
-3. Copie os modelos:
+3. Copy the templates:
+
    ```bash
-   cp *.auto.tfvars.exemplo .
-   mv vm.auto.tfvars.exemplo vm.auto.tfvars
-   mv networks.auto.tfvars.exemplo networks.auto.tfvars
-   mv secrets.auto.tfvars.exemplo secrets.auto.tfvars
+   cp *.auto.tfvars.example .
+   mv vm.auto.tfvars.example vm.auto.tfvars
+   mv networks.auto.tfvars.example networks.auto.tfvars
+   mv secrets.auto.tfvars.example secrets.auto.tfvars
    ```
-4. Edite os arquivos:
-   - `secrets.auto.tfvars`: sua chave SSH, URI, pools
-   - `networks.auto.tfvars`: defina suas redes
-   - `vm.auto.tfvars`: declare suas VMs
-5. Execute:
+4. Edit the files:
+
+   * `secrets.auto.tfvars`: your SSH key, URI, pools
+   * `networks.auto.tfvars`: define your networks
+   * `vm.auto.tfvars`: declare your VMs
+5. Run:
+
    ```bash
    terraform init
    terraform validate
    terraform apply
    ```
 
-### Saídas úteis
+### Useful Outputs
 
-Após o `apply`, a saída `provisioned_vms` fornece uma estrutura pronta para gerar inventário Ansible:
+After `apply`, the `provisioned_vms` output provides a structure ready for generating an Ansible inventory:
 
 ```json
   "SdnsDMZ03" = {
@@ -111,17 +117,17 @@ Após o `apply`, a saída `provisioned_vms` fornece uma estrutura pronta para ge
   }
 ```
 
-## ⚠️ Limitações e decisões de design
+## ⚠️ Limitations and Design Decisions
 
-| Aspecto | Detalhe |
-|--------|--------|
-| **Chave SSH** | Única e global (não por VM) |
-| **Windows** | Não usa Cloud-init; drivers via CD-ROM fixo (`virtio-win-0.1.285.iso`) |
-| **Validação** | Nenhuma validação prévia de existência de imagens ou redes |
-| **Provider** | Versão **fixada em `= 0.9.1`** do `dmacvicar/libvirt` |
-| **Escalabilidade** | Projetado para laboratórios; não para produção |
+| Aspect          | Detail                                                                       |
+| --------------- | ---------------------------------------------------------------------------- |
+| **SSH Key**     | Single global key (not per VM)                                               |
+| **Windows**     | Does not use Cloud-init; drivers via fixed CD-ROM (`virtio-win-0.1.285.iso`) |
+| **Validation**  | No pre-validation of image or network existence                              |
+| **Provider**    | Version **pinned to `= 0.9.1`** of `dmacvicar/libvirt`                       |
+| **Scalability** | Designed for labs; not for production                                        |
 
-## 📂 Estrutura de arquivos esperada no host
+## 📂 Expected File Structure on Host
 
 ```
 /home/mdonato/vm/                # image_directory = storage_pool "default"
@@ -130,43 +136,42 @@ Após o `apply`, a saída `provisioned_vms` fornece uma estrutura pronta para ge
 ├── win2k22gui-custom-image.qcow2
 └── vyos-custom-image.qcow2
 
-/home/mdonato/Downloads/iso        # ou outro caminho, desde que consistente
-└── virtio-win-0.1.285.iso       # dentro do pool "iso"
+/home/mdonato/Downloads/iso     # or another path, as long as consistent
+└── virtio-win-0.1.285.iso      # inside the "iso" pool
 ```
 
-## 📚 Documentação dos módulos
+## 📚 Module Documentation
 
-Cada módulo contém seu próprio `README.md` com:
-- Responsabilidades exatas
-- Entradas/saídas reais
-- Limitações técnicas
-- Exemplos de uso
+Each module includes its own `README.md` with:
 
-Módulos:
-- [`modules/network/README.md`](modules/network/README.md)
-- [`modules/volume/README.md`](modules/volume/README.md)
-- [`modules/cloudinit/README.md`](modules/cloudinit/README.md)
-- [`modules/domain_linux/README.md`](modules/domain_linux/README.md)
-- [`modules/domain_win/README.md`](modules/domain_win/README.md)
-- [`modules/orchestration/README.md`](modules/orchestration/README.md)
+* Exact responsibilities
+* Actual inputs/outputs
+* Technical limitations
+* Usage examples
 
-Environments:
-- [`environments/lab/README.md`](environments/lab/README.md)
+See:
 
-## 🧪 Casos de uso típicos
+* [`modules/network/README.md`](modules/network/README.md)
+* [`modules/volume/README.md`](modules/volume/README.md)
+* [`modules/cloudinit/README.md`](modules/cloudinit/README.md)
+* [`modules/domain_linux/README.md`](modules/domain_linux/README.md)
+* [`modules/domain_windows/README.md`](modules/domain_windows/README.md)
+* [`modules/orchestration/README.md`](modules/orchestration/README.md)
 
-- Laboratório de segurança (firewall VyOS, DMZ, servidores internos)
-- Simulação de rede corporativa (AD, DNS, DHCP, estações Windows/Linux)
-- Estudo de IPv6 em redes isoladas
-- Ambiente de desenvolvimento com múltiplas distribuições
+## 🧪 Typical Use Cases
 
-## 🛠 Requisitos técnicos
+* Security lab (VyOS firewall, DMZ, internal servers)
+* Corporate network simulation (AD, DNS, DHCP, Windows/Linux workstations)
+* IPv6 study in isolated networks
+* Development environment with multiple distributions
 
-- Terraform = 1.14.0 ou OpenTofu = 1.11.0
-- Provider `dmacvicar/libvirt` **= 0.9.1**
-- QEMU/KVM com suporte a TPM 2.0
-- SPICE habilitado (para console gráfico)
+## 🛠 Technical Requirements
+
+* Terraform = 1.14.0 or OpenTofu = 1.11.0
+* Provider `dmacvicar/libvirt` **= 0.9.1**
+* QEMU/KVM with TPM 2.0 support
+* SPICE enabled (for graphical console)
 
 ---
 
-> Este projeto prioriza **clareza**, **reprodutibilidade** e **fidelidade ao código real** — não abstrações genéricas.
+> This project prioritizes **clarity**, **reproducibility**, and **fidelity to real code** — not generic abstractions.
