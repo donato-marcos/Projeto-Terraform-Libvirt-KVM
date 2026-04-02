@@ -9,6 +9,12 @@ variable "vms" {
   type        = any
 }
 
+variable "template_dir" {
+  description = "Diretório com templates de cloud-init específicos do environment"
+  type        = string
+  default     = null
+}
+
 # --- Configuração do ambiente ---
 variable "ssh_public" {
   description = "Chave SSH pública para cloud-init"

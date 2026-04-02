@@ -1,65 +1,59 @@
 
-# `orchestration` Module
+# Módulo `orchestration`
 
-Central orchestrator that coordinates the full creation of Libvirt infrastructure: networks, volumes, Cloud-init, and domains.
+Orquestrador central que coordena a criação completa da infraestrutura Libvirt: redes, volumes, Cloud-init e domínios.
 
-## Responsibility
+## Responsabilidade
 
-This module:
+Este módulo:
+- Cria todas as redes definidas em `var.networks`
+- Provisiona volumes de disco para **todas as VMs**, independentemente do sistema operacional
+- Gera ISOs de Cloud-init **apenas para VMs com `os_type = "linux"` ou `"vyos"`**
+- Instancia domínios KVM separadamente:
+  - **Linux/VyOS**: com Cloud-init, EFI e TPM
+  - **Windows**: com drivers VirtIO, Hyper-V enlightenments e relógio em `localtime`
 
-* Creates all networks defined in `var.networks`
-* Provisions disk volumes for **all VMs**, regardless of operating system
-* Generates Cloud-init ISOs **only for VMs with `os_type = "linux"` or `"vyos"`**
-* Instantiates KVM domains separately:
+## O que este módulo **não faz**
+- Validar se redes referenciadas nas VMs existem em `var.networks`
+- Personalizar chaves SSH por VM (usa uma única chave global via `var.ssh_public`)
+- Tratar erros de imagem base ausente (delegado aos módulos `volume` e `domain_*`)
+- Executar pós-provisionamento (ex: Ansible) — apenas infraestrutura
 
-  * **Linux/VyOS**: with Cloud-init, EFI, and TPM
-  * **Windows**: with VirtIO drivers, Hyper-V enlightenments, and `localtime` clock
+## Fluxo interno
 
-## What this module **does not do**
+O orquestrador executa os módulos na seguinte ordem, com dependências explícitas:
 
-* Validate whether networks referenced in VMs exist in `var.networks`
-* Customize SSH keys per VM (uses a single global key via `var.ssh_public`)
-* Handle missing base image errors (delegated to the `volume` and `domain_*` modules)
-* Perform post-provisioning (e.g., Ansible) — infrastructure only
+1. **`module.network`** → cria redes Libvirt  
+2. **`module.volume`** → cria todos os discos (`<vm>-<disk>`)  
+3. **`module.cloudinit`** → gera ISOs apenas para Linux/VyOS  
+4. **`module.domain_linux`** → instancia VMs Linux/VyOS com Cloud-init  
+5. **`module.domain_win`** → instancia VMs Windows com ISO de drivers  
 
-## Internal Flow
+As etapas usam `depends_on` para garantir ordem, mesmo quando não há referência direta.
 
-The orchestrator executes modules in the following order, with explicit dependencies:
+## Entradas esperadas
 
-1. **`module.network`** → creates Libvirt networks
-2. **`module.volume`** → creates all disks (`<vm>-<disk>`)
-3. **`module.cloudinit`** → generates ISOs for Linux/VyOS only
-4. **`module.domain_linux`** → instantiates Linux/VyOS VMs with Cloud-init
-5. **`module.domain_win`** → instantiates Windows VMs with driver ISO
+| Variável | Tipo | Observação |
+|--------|------|-----------|
+| `networks` | `list(object)` | Definição de redes (IPv4/IPv6, DHCP, modo) |
+| `vms` | `any` | Todas as VMs, com `os_type`, discos, redes |
+| `ssh_public` | `object` | Chave SSH global para Cloud-init (`type`, `key`, `host_origin`) |
+| `storage_pool` | `string` | Pool Libvirt para volumes e ISOs |
+| `image_directory` | `string` | Caminho físico das imagens base |
 
-Each step uses `depends_on` to guarantee ordering, even when there are no direct references.
+> ⚠️ **Requisito crítico**:
+> - Redes referenciadas em `vms[*].networks[].name` **devem existir** em `var.networks`
 
-## Expected Inputs
+## Saídas
 
-| Variable          | Type           | Notes                                                        |
-| ----------------- | -------------- | ------------------------------------------------------------ |
-| `networks`        | `list(object)` | Network definitions (IPv4/IPv6, DHCP, mode)                  |
-| `vms`             | `any`          | All VMs, including `os_type`, disks, networks                |
-| `ssh_public`      | `object`       | Global SSH key for Cloud-init (`type`, `key`, `host_origin`) |
-| `storage_pool`    | `string`       | Libvirt pool for volumes and ISOs                            |
-| `image_directory` | `string`       | Physical path to base images                                 |
+- `provisioned_vms`: estrutura consolidada com:
+  - Configuração original da VM (`os_type`, `vcpus`, etc.)
+  - Nome real dos volumes (`vol_name = "<vm>-<disk>"`)
+  - Status desejado (`"running"` ou `"shut off"`)
+  - Redes configuradas (com ou sem IP estático)
 
-> ⚠️ **Critical requirement**:
->
-> * Networks referenced in `vms[*].networks[].name` **must exist** in `var.networks`
-
-## Outputs
-
-* `provisioned_vms`: consolidated structure containing:
-
-  * Original VM configuration (`os_type`, `vcpus`, etc.)
-  * Actual volume names (`vol_name = "<vm>-<disk>"`)
-  * Desired state (`"running"` or `"shut off"`)
-  * Configured networks (with or without static IP)
-
-Example output:
-
-```json id="s7x7np"
+Exemplo de saída:
+```json
   "SdnsDMZ03" = {
     "current_memory" = 2048
     "disks" = [
@@ -89,10 +83,10 @@ Example output:
   }
 ```
 
-## Known Limitations
+## Limitações conhecidas
 
-* Does not support multiple SSH keys per VM
-* Does not validate network topology before apply
-* Assumes `image_directory` physically matches the `storage_pool`
-* Requires Cloud-init templates to exist for the specified `os_type`
-* Does not support native `count` or loops — each VM must have a unique key in the map
+- Não suporta múltiplas chaves SSH por VM
+- Não valida topologia de rede antes da aplicação
+- Assume que `image_directory` corresponde fisicamente ao `storage_pool`
+- Requer que templates de Cloud-init existam para `os_type` usado
+- Não suporta `count` ou loops nativos — cada VM deve ter chave única no mapa

@@ -26,3 +26,9 @@ variable "storage_pool" {
   description = "Nome do storage pool Libvirt"
   type        = string
 }
+
+variable "template_dir" {
+  description = "Diretório com templates específicos. Se null, usa templates embutidos no módulo."
+  type        = string
+  default     = null
+}

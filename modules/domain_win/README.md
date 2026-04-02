@@ -1,50 +1,47 @@
 
-# `domain_windows` Module
+# Módulo `domain_windows`
 
-Creates Windows virtual machines on Libvirt/KVM with configuration optimized for performance and compatibility.
+Cria máquinas virtuais Windows no Libvirt/KVM com configuração otimizada para desempenho e compatibilidade.
 
-## Responsibility
+## Responsabilidade
 
-This module:
+Este módulo:
+- Cria domínios KVM com otimizações específicas do **Hyper-V enlightenments**
+- Anexa automaticamente o ISO de drivers VirtIO (`virtio-win-0.1.285.iso`) como CD-ROM SATA
+- Configura relógio em `localtime` (recomendado para Windows)
+- Ativa TPM 2.0 (requerido para Windows 11, útil para Server 2022+)
+- Usa vídeo `qxl` por padrão para melhor integração com SPICE
 
-* Creates KVM domains with **Hyper-V enlightenments** optimizations
-* Automatically attaches the VirtIO driver ISO (`virtio-win-0.1.285.iso`) as a SATA CD-ROM
-* Configures the clock to `localtime` (recommended for Windows)
-* Enables TPM 2.0 (required for Windows 11, useful for Server 2022+)
-* Uses `qxl` video by default for better SPICE integration
+## O que este módulo **não faz**
+- Usar Cloud-init (Windows não é compatível)
+- Validar existência do ISO `virtio-win-0.1.285.iso`
+- Criar o storage pool `iso` — ele deve existir previamente
+- Instalar drivers automaticamente — o ISO é apenas disponibilizado
 
-## What this module **does not do**
+## Entrada esperada
 
-* Use Cloud-init (Windows is not compatible)
-* Validate the existence of the `virtio-win-0.1.285.iso` file
-* Create the `iso` storage pool — it must already exist
-* Automatically install drivers — the ISO is only made available
+| Variável | Tipo | Observação |
+|--------|------|-----------|
+| `vms` | `map(object)` | Apenas VMs com `os_type = "windows"` |
+| `networks_map` | `map({ name = string })` | Saída do módulo `network` |
+| `volumes_map` | `map({ name, pool })` | Saída do módulo `volume` |
 
-## Expected Input
+> ⚠️ **Requisito crítico**:  
+> - Um **storage pool chamado `iso`** deve existir no Libvirt  
+> - Esse pool deve conter o arquivo **`virtio-win-0.1.285.iso`**  
+> Caso contrário, o plano falhará com erro de volume inexistente.
 
-| Variable       | Type                     | Notes                               |
-| -------------- | ------------------------ | ----------------------------------- |
-| `vms`          | `map(object)`            | Only VMs with `os_type = "windows"` |
-| `networks_map` | `map({ name = string })` | Output from the `network` module    |
-| `volumes_map`  | `map({ name, pool })`    | Output from the `volume` module     |
+## Configuração de hardware
 
-> ⚠️ **Critical requirement**:
->
-> * A **storage pool named `iso`** must exist in Libvirt
-> * This pool must contain the file **`virtio-win-0.1.285.iso`**
->   Otherwise, the plan will fail with a missing volume error.
+- **Firmware**: EFI por padrão
+- **CPU**: `host-passthrough` + *Hyper-V enlightenments* completos
+- **Relógio**: `localtime` com timer `hypervclock` habilitado
+- **Vídeo**: `qxl` com RAM/VGA configurados para desempenho gráfico
+- **Discos**: todos os volumes listados em `disks`, com `bootable = true` marcado com `order = 1`
+- **Drivers**: ISO `virtio-win-0.1.285.iso` montado como CD-ROM SATA (`sda`)
+- **TPM**: sempre habilitado (`tpm-crb`, versão 2.0)
 
-## Hardware Configuration
-
-* **Firmware**: EFI by default
-* **CPU**: `host-passthrough` + full *Hyper-V enlightenments*
-* **Clock**: `localtime` with `hypervclock` timer enabled
-* **Video**: `qxl` with RAM/VGA tuned for graphical performance
-* **Disks**: all volumes listed in `disks`, with the one marked `bootable = true` assigned `order = 1`
-* **Drivers**: `virtio-win-0.1.285.iso` mounted as a SATA CD-ROM (`sda`)
-* **TPM**: always enabled (`tpm-crb`, version 2.0)
-
-## Example Usage
+## Exemplo de uso
 
 ```hcl
 locals {
@@ -63,17 +60,16 @@ module "domain_win" {
 }
 ```
 
-## Outputs
+## Saídas
 
-* `domains`: map indexed by VM name, containing:
+- `domains`: mapa indexado pelo nome da VM, contendo:
+  - `id`: UUID do domínio no Libvirt
+  - `name`: nome da VM
 
-  * `id`: Libvirt domain UUID
-  * `name`: VM name
+## Limitações conhecidas
 
-## Known Limitations
-
-* Driver ISO is **hardcoded** as `virtio-win-0.1.285.iso` — cannot be changed without modifying the module
-* Does not support fine-grained device customization beyond what is exposed
-* Assumes `x86_64` architecture and `q35` machine type
-* Requires a preconfigured Windows base image
-* Does not support multiple bootable disks (only the first with `bootable = true` gets `order = 1`)
+- ISO de drivers é **hardcoded** como `virtio-win-0.1.285.iso` — não é possível substituir sem modificar o módulo
+- Não suporta personalização fina de dispositivos além do exposto
+- Assume arquitetura `x86_64` e máquina `q35`
+- Requer imagem base Windows pré-configurada
+- Não permite múltiplos discos bootáveis (apenas o primeiro com `bootable = true` tem `order = 1`)

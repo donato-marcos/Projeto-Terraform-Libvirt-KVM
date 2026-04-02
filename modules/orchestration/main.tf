@@ -41,6 +41,7 @@ module "cloudinit" {
   source       = "../cloudinit"
   vms          = local.cloudinit_input
   storage_pool = var.storage_pool
+  template_dir = var.template_dir
 
   depends_on = [module.volume]
 }

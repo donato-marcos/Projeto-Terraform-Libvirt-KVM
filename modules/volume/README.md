@@ -1,50 +1,48 @@
 
-# `volume` Module
+# Módulo `volume`
 
-Creates Libvirt disk volumes for virtual machines, with or without a base image (*backing store*).
+Cria volumes de disco Libvirt para máquinas virtuais, com ou sem imagem base (*backing store*).
 
-## Responsibility
+## Responsabilidade
 
-This module:
+Este módulo:
+- Cria volumes no storage pool especificado (`var.storage_pool`)
+- Suporta discos vazios ou baseados em imagens pré-existentes
+- Deriva o formato do disco (`qcow2` ou `raw`) da configuração fornecida
+- Nomeia cada volume como `<vm_name>-<disk_name>`
 
-* Creates volumes in the specified storage pool (`var.storage_pool`)
-* Supports empty disks or disks based on pre-existing images
-* Derives the disk format (`qcow2` or `raw`) from the provided configuration
-* Names each volume as `<vm_name>-<disk_name>`
+## O que este módulo **não faz**
+- Validar se a imagem base existe em `image_directory`
+- Garantir unicidade global de nomes de volume (colisões silenciosas ocorrem se duas VMs tiverem mesmo nome + mesmo `disk.name`)
+- Tratar o campo `bootable` — ele é aceito, mas **ignorado** (responsabilidade do módulo de domínio)
+- Criar volumes em múltiplos pools diferentes (todos usam o mesmo `storage_pool`)
 
-## What this module **does not do**
+## Entrada esperada
 
-* Validate whether the base image exists in `image_directory`
-* Guarantee global uniqueness of volume names (silent collisions may occur if two VMs share the same name + `disk.name`)
-* Handle the `bootable` field — it is accepted but **ignored** (responsibility of the domain module)
-* Create volumes across multiple pools (all volumes use the same `storage_pool`)
+A variável `vms` deve ser um mapa onde cada VM contém uma lista `disks`. Cada disco aceita:
 
-## Expected Input
+| Campo | Tipo | Obrigatório | Padrão | Observação |
+|------|------|-------------|--------|-----------|
+| `name` | `string` | Sim | — | Usado na composição do nome do volume |
+| `size_gb` | `number` | Sim | — | Tamanho em gibibytes (GiB) |
+| `backing_store.image` | `string` | Condicional | — | Nome do arquivo de imagem base (ex: `"ubuntu-24-cloud.x86_64.qcow2"`) |
+| `backing_store.format` | `string` | Não | `"qcow2"` | Formato da imagem base |
+| `format` | `string` | Não | `"qcow2"` | Usado apenas se não houver `backing_store` |
 
-The `vms` variable must be a map where each VM contains a `disks` list. Each disk supports:
+> ⚠️ **Requisito crítico**:  
+> O diretório `image_directory` **deve corresponder fisicamente** ao caminho do `storage_pool` Libvirt.  
+> Exemplo: se `storage_pool = "default"` aponta para `/home/user/vm`, então `image_directory` deve ser `/home/user/vm`.
 
-| Field                  | Type     | Required    | Default   | Notes                                                        |
-| ---------------------- | -------- | ----------- | --------- | ------------------------------------------------------------ |
-| `name`                 | `string` | Yes         | —         | Used to compose the volume name                              |
-| `size_gb`              | `number` | Yes         | —         | Size in gibibytes (GiB)                                      |
-| `backing_store.image`  | `string` | Conditional | —         | Base image filename (e.g., `"ubuntu-24-cloud.x86_64.qcow2"`) |
-| `backing_store.format` | `string` | No          | `"qcow2"` | Base image format                                            |
-| `format`               | `string` | No          | `"qcow2"` | Used only if no `backing_store` is defined                   |
+## Comportamentos técnicos
 
-> ⚠️ **Critical requirement**:
-> The `image_directory` **must physically match** the Libvirt `storage_pool` path.
-> Example: if `storage_pool = "default"` points to `/home/user/vm`, then `image_directory` must be `/home/user/vm`.
+- **Nome do volume**: sempre `<vm_name>-<disk_name>` (ex: `"SdcSVR01-os"`)
+- **Capacidade**: convertida internamente para bytes (`size_gb * 1024³`)
+- **Formato**: prioriza `backing_store.format`, depois `disk.format`, senão `"qcow2"`
+- **Backing store**: caminho completo é `${var.image_directory}/${image}`
 
-## Technical Behavior
+## Exemplo de uso
 
-* **Volume name**: always `<vm_name>-<disk_name>` (e.g., `"SdcSVR01-os"`)
-* **Capacity**: internally converted to bytes (`size_gb * 1024³`)
-* **Format**: prioritizes `backing_store.format`, then `disk.format`, otherwise `"qcow2"`
-* **Backing store**: full path is `${var.image_directory}/${image}`
-
-## Example Usage
-
-```hcl id="l2y2pz"
+```hcl
 module "volume" {
   source          = "./modules/volume"
   vms             = var.vms
@@ -53,19 +51,18 @@ module "volume" {
 }
 ```
 
-## Outputs
+## Saídas
 
-* `volumes`: map indexed by `<vm_name>-<disk_name>`, containing:
+- `volumes`: mapa indexado por `<vm_name>-<disk_name>`, contendo:
+  - `id`: UUID do volume no Libvirt
+  - `name`: nome do volume
+  - `pool`: nome do storage pool
 
-  * `id`: Libvirt volume UUID
-  * `name`: volume name
-  * `pool`: storage pool name
+Essa saída é usada pelos módulos `domain_linux` e `domain_windows` para anexar os discos corretos.
 
-This output is used by the `domain_linux` and `domain_windows` modules to attach the correct disks.
+## Limitações conhecidas
 
-## Known Limitations
-
-* No pre-validation of base image existence — failures occur only at apply time
-* All volumes are created in the same pool (`storage_pool`)
-* Long VM + disk names may exceed filesystem limits (rare but possible)
-* The `bootable` field is stored in VM data but **does not affect this module**
+- Não há verificação prévia da existência da imagem base — falha apenas na aplicação
+- Todos os volumes são criados no mesmo pool (`storage_pool`)
+- Nomes longos de VM + disco podem exceder limites do sistema de arquivos (raro, mas possível)
+- O campo `bootable` é armazenado nos dados da VM, mas **não influencia este módulo**
