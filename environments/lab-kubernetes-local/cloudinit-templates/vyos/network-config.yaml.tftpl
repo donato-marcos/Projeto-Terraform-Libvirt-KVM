@@ -1,7 +1,0 @@
-version: 2
-ethernets:
-%{ for i, net in networks ~}
-  eth${i}:
-    dhcp4: false
-    dhcp6: false
-%{ endfor ~}
