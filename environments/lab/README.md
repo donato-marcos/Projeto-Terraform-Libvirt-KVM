@@ -34,7 +34,7 @@ cp secrets.auto.tfvars.example secrets.auto.tfvars
 > ⚠️ **Critical requirement**:
 >
 > * `storage_pool` and `image_directory` must point to the **same physical directory**
-> * The `iso` storage pool must exist and contain `virtio-win-0.1.285.iso` (for Windows VMs)
+> * The `iso` storage pool must exist and contain [`virtio-win-0.1.285.iso`](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso) (for Windows VMs)
 
 ## Execution Flow
 

@@ -50,9 +50,34 @@ terraform-libvirt-project/
 * **`default` storage pool** pointing to a directory with base images (e.g., `/home/mdonato/vm`)
 * **`iso` storage pool** containing:
 
-  * `virtio-win-0.1.285.iso` (required for Windows)
-* **Base images** in `image_directory` (e.g., Ubuntu Cloud, Rocky, custom Win2022)
+  * [`virtio-win-0.1.285.iso`](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso) (required for Windows)
+* **Base images** in `image_directory` — the images you need depend on your `vm.auto.tfvars`.  
+  Common examples: Ubuntu Cloud, Rocky, custom Win2022, VyOS.
 * **Cloud-init templates** in `modules/cloudinit/templates/{linux,vyos}`
+
+### 📋 Which base images do you really need?
+
+**None are universally required.** The images you need depend entirely on the VMs defined in your `vm.auto.tfvars`.
+
+For example, this VM definition:
+```json
+"SdnsDMZ03" = {
+  os_type = "linux"
+  disks = [{
+    backing_store = {
+      image = "ubuntu-24-cloud.x86_64.qcow2"   # <-- THIS image is required
+    }
+  }]
+}
+```
+*`Requires only ubuntu-24-cloud.x86_64.qcow2`.*
+
+> ✅ **Rule of thumb:** Look at the `backing_store.image` field in each VM definition. Those are the only base images you must provide.
+
+> If your lab doesn't use VyOS, you don't need vyos-custom-image.qcow2.
+> If it doesn't use Windows, you don't need win2k22gui-custom-image.qcow2.
+
+> 📖 VyOS users: If your lab includes VyOS, see [Building a VyOS ISO and Base qcow2 Image](https://github.com/donato-marcos/Build-Images/blob/main/build-vyos-custom-qcow2.md) if you need a custom VyOS base image.
 
 ### Step-by-step
 
@@ -139,6 +164,8 @@ After `apply`, the `provisioned_vms` output provides a structure ready for gener
 /home/mdonato/Downloads/iso     # or another path, as long as consistent
 └── virtio-win-0.1.285.iso      # inside the "iso" pool
 ```
+> ⚠️ **Important:** The files shown above are **examples only**.  
+> You only need the base images that are actually referenced in your `vm.auto.tfvars` under `backing_store.image`.
 
 ## 📚 Module Documentation
 
@@ -157,6 +184,7 @@ See:
 * [`modules/domain_linux/README.md`](modules/domain_linux/README.md)
 * [`modules/domain_windows/README.md`](modules/domain_windows/README.md)
 * [`modules/orchestration/README.md`](modules/orchestration/README.md)
+* [`environments/lab/README.md`](environments/lab/README.md)
 
 ## 🧪 Typical Use Cases
 
