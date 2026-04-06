@@ -9,4 +9,7 @@ module "orchestration" {
   ssh_public      = var.ssh_public
   storage_pool    = var.storage_pool
   image_directory = var.image_directory
+
+  # Templates específicos deste lab
+  template_dir = "${path.module}/cloudinit-templates"
 }
