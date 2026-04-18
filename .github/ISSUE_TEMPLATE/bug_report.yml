@@ -1,0 +1,57 @@
+name: Bug Report 🐛
+description: Help us identify issues in Terraform/KVM provisioning.
+title: "[BUG]: <short summary>"
+labels: [bug, needs-triage]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting this issue! Please fill in the technical details below to help with debugging.
+
+  - type: input
+    id: bug-summary
+    attributes:
+      label: Bug Summary
+      description: A brief description of what is happening.
+      placeholder: "e.g., Error creating disk volume in Libvirt pool"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details and Reproduction
+      description: Provide steps to reproduce the issue.
+      value: |
+        **Steps to Reproduce:**
+        1. Configure the main.tf file with...
+        2. Run `terraform init`
+        3. Run `terraform apply`
+
+        **Expected Behavior:**
+        The VM should be provisioned successfully.
+
+        **Actual Behavior:**
+        A permission error or timeout occurs.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Technical Environment
+      description: OS, Terraform, and Libvirt provider versions.
+      placeholder: "e.g., Ubuntu 22.04, Terraform 1.5.0, libvirt provider 0.7.1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Terraform Logs
+      description: Paste the error output here (terminal output).
+      render: shell
+    validations:
+      required: false
