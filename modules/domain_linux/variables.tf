@@ -16,6 +16,7 @@ variable "vms" {
     networks = list(object({
       name           = string
       wait_for_lease = optional(bool, false)
+      mac_address    = optional(string) 
     }))
   }))
 }

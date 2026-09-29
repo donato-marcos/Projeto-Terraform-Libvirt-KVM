@@ -18,6 +18,7 @@ variable "vms" {
       ipv6_gateway   = optional(string)
       dns_servers    = optional(list(string), [])
       wait_for_lease = optional(bool, false)
+    talos_machine_config = optional(string)
     }))
   }))
 }

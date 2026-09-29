@@ -1,8 +1,8 @@
 # --- Infraestrutura ---
 variable "networks" {
-  description = "Lista de redes"
-  type        = list(any)
+  type = any
 }
+
 
 variable "vms" {
   description = "Mapa completo de VMs"

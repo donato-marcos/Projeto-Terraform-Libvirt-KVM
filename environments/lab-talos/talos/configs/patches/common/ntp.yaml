@@ -1,0 +1,10 @@
+apiVersion: v1alpha1
+kind: TimeSyncConfig
+ntp:
+  useNTS: true
+  servers:
+    - a.st1.ntp.br
+    - c.st1.ntp.br
+    - d.st1.ntp.br
+    - e.st1.ntp.br
+    - gps.nu.ntp.br

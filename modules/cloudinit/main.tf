@@ -14,6 +14,7 @@ resource "libvirt_cloudinit_disk" "this" {
       hostname   = each.value.hostname
       ssh_public = each.value.ssh_public
       networks   = each.value.networks
+      talos_machine_config = try(each.value.talos_machine_config, "")
     }
   )
 

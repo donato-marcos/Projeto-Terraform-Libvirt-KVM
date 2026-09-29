@@ -1,0 +1,22 @@
+apiVersion: v1alpha1
+kind: KubePrismConfig
+port: 7445
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+nodeIP:
+  validSubnets:
+    - 172.16.200.0/24
+    - fd00:172:16:200::/64
+---
+apiVersion: v1alpha1
+kind: KubeNetworkConfig
+dnsDomain: cluster.local
+podSubnets:
+  - 10.244.0.0/16
+  - fd00:10:244::/56
+serviceSubnets:
+  - 10.96.0.0/12
+  - fd00:10:96::/112
+nodeCIDRMaskSizeIPv4: 24
+nodeCIDRMaskSizeIPv6: 64

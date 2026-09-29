@@ -18,5 +18,11 @@ variable "networks" {
     ipv6_dhcp_enabled = optional(bool, false)
     ipv6_dhcp_start   = optional(string)
     ipv6_dhcp_end     = optional(string)
+
+    dhcp_reservations = optional(list(object({
+      mac  = string
+      ip   = string
+      name = optional(string, "")
+    })), [])
   }))
 }

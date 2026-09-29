@@ -26,6 +26,13 @@ resource "libvirt_network" "this" {
           start = each.value.ipv4_dhcp_start
           end   = each.value.ipv4_dhcp_end
         }]
+        hosts = length(each.value.dhcp_reservations) > 0 ? [
+          for res in each.value.dhcp_reservations : {
+            mac  = res.mac
+            ip   = res.ip
+            name = res.name != "" ? res.name : null
+          } if !can(regex(":", res.ip))
+        ] : []
       } : null
     }] : [],
   
@@ -38,6 +45,13 @@ resource "libvirt_network" "this" {
           start = each.value.ipv6_dhcp_start
           end   = each.value.ipv6_dhcp_end
         }]
+        hosts = length(each.value.dhcp_reservations) > 0 ? [
+          for res in each.value.dhcp_reservations : {
+            mac  = res.mac
+            ip   = res.ip
+            name = res.name != "" ? res.name : null
+          } if can(regex(":", res.ip))
+        ] : []
       } : null
     }] : []
   )

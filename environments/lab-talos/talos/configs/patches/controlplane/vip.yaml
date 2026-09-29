@@ -1,0 +1,4 @@
+apiVersion: v1alpha1
+kind: Layer2VIPConfig
+name: 172.16.200.10
+link: eth1

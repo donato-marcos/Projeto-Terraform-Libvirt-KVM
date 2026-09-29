@@ -1,0 +1,115 @@
+autoDirectNodeRoutes: true
+bgpControlPlane:
+  enabled: true
+bpf:
+  hostLegacyRouting: false
+  masquerade: true
+  tproxy: false
+  datapathMode: auto
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+cluster:
+  id: 1
+  name: k8s-cluster
+directRoutingSkipUnreachable: false
+enableIPv4BIGTCP: true
+enableIPv4Masquerade: true
+enableIPv6BIGTCP: true
+enableIPv6Masquerade: true
+#endpointRoutes:
+#  enabled: true
+envoy:
+  enabled: true
+  securityContext:
+    capabilities:
+      envoy:
+      - NET_ADMIN
+      - SYS_ADMIN
+      keepCapNetBindService: true
+extraConfig:
+  enable-ipv6-ndp: "true"
+  ipv6-mcast-device: eth1
+gatewayAPI:
+  enabled: true
+  gatewayClass:
+    create: true
+hubble:
+  enabled: true
+  metrics:
+    enableOpenMetrics: true
+    enabled:
+    - dns
+    - drop
+    - tcp
+    - flow
+    - port-distribution
+    - icmp
+    - http
+  peerService:
+    clusterDomain: cluster.local
+  relay:
+    enabled: true
+  tls:
+    enabled: false
+  ui:
+    enabled: true
+ipam:
+  mode: kubernetes
+#  operator:
+#    clusterPoolIPv4MaskSize: 24
+#    clusterPoolIPv4PodCIDRList:
+#    - 10.244.0.0/16
+#    clusterPoolIPv6MaskSize: 64
+#    clusterPoolIPv6PodCIDRList:
+#    - fd00:10:244::/56
+ipv4:
+  enabled: true
+ipv4NativeRoutingCIDR: 10.244.0.0/16
+ipv6:
+  enabled: true
+ipv6NativeRoutingCIDR: fd00:10:244::/56
+k8sServiceHost: localhost
+k8sServicePort: 7445
+kubeProxyReplacement: true
+loadBalancer:
+  acceleration: best-effort
+  algorithm: maglev
+  dsrDispatch: opt
+  l7:
+    backend: envoy
+    ports: []
+  mode: dsr
+  serviceTopology: true
+  standalone: false
+nodePort:
+  addresses:
+    - 172.16.200.0/24
+    - fd00:172:16:200::/64
+operator:
+  prometheus:
+    enabled: true
+prometheus:
+  enabled: false
+routingMode: native
+securityContext:
+  capabilities:
+    ciliumAgent:
+    - CHOWN
+    - KILL
+    - NET_ADMIN
+    - NET_RAW
+    - NET_BIND_SERVICE
+    - IPC_LOCK
+    - SYS_ADMIN
+    - SYS_RESOURCE
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
+    - SYSLOG
+    cleanCiliumState:
+    - NET_ADMIN
+    - SYS_ADMIN
+    - SYS_RESOURCE

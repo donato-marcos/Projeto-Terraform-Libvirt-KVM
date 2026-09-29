@@ -118,6 +118,9 @@ resource "libvirt_domain" "this" {
           network = { network = var.networks_map[net.name].name }
         }
         model = { type = "virtio" }
+        mac = net.mac_address != null ? {
+          address = net.mac_address
+        } : null
         wait_for_ip = (
           !(startswith(net.name, "bridge") || startswith(net.name, "br")) &&
           net.wait_for_lease

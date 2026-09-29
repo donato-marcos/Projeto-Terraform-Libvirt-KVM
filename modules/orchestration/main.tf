@@ -24,7 +24,7 @@ module "volume" {
 locals {
   cloudinit_vms = {
     for name, vm in var.vms : name => vm
-    if vm.os_type == "linux" || vm.os_type == "vyos"
+    if vm.os_type == "linux" || vm.os_type == "vyos" || vm.os_type == "talos"
   }
 
   cloudinit_input = {
@@ -33,6 +33,7 @@ locals {
       hostname   = name
       ssh_public = var.ssh_public
       networks   = vm.networks
+      talos_machine_config = vm.os_type == "talos" ? null : null
     }
   }
 }
@@ -52,7 +53,7 @@ module "cloudinit" {
 locals {
   linux_vyos_vms = {
     for name, vm in var.vms : name => vm
-    if vm.os_type == "linux" || vm.os_type == "vyos"
+    if vm.os_type == "linux" || vm.os_type == "vyos" || vm.os_type == "talos"
   }
 }
 

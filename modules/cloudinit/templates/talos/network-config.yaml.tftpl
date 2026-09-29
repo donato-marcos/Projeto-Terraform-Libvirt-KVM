@@ -1,0 +1,26 @@
+version: 1
+config:
+%{ for i, net in networks ~}
+  - type: physical
+    name: enp${i+1}s0
+    subnets:
+%{   if net.ipv4_address != null && net.ipv4_address != "dhcp" ~}
+      - type: static
+        address: ${net.ipv4_address}
+        netmask: ${net.ipv4_prefix}
+%{     if net.ipv4_gateway != null ~}
+        gateway: ${net.ipv4_gateway}
+%{     endif ~}
+%{   endif ~}
+%{   if net.ipv6_address != null && net.ipv6_address != "dhcp" ~}
+      - type: static
+        address: ${net.ipv6_address}
+        netmask: ${net.ipv6_prefix}
+%{     if net.ipv6_gateway != null ~}
+        gateway: ${net.ipv6_gateway}
+%{     endif ~}
+%{   endif ~}
+%{   if net.ipv4_address == "dhcp" || net.ipv6_address == "dhcp" ~}
+      - type: dhcp
+%{   endif ~}
+%{ endfor ~}

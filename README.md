@@ -1,7 +1,11 @@
 
 # Terraform Libvirt Project – Lab Infrastructure
 
-This project provisions a complete virtualized infrastructure using **Terraform + Libvirt/KVM**, designed for **heterogeneous lab environments** with Linux, Windows, and VyOS, supporting IPv4/IPv6 networking.
+>This project provisions a complete virtualized infrastructure using **Terraform + Libvirt/KVM**, designed for **heterogeneous lab environments** with Linux, Windows, and VyOS, supporting IPv4/IPv6 networking.
+
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Terraform](https://img.shields.io/badge/Terraform-1.14+-purple.svg)](https://www.terraform.io/)
+[![Provider](https://img.shields.io/badge/Provider-0.9.1-orange.svg)](https://registry.terraform.io/providers/dmacvicar/libvirt/latest)
 
 ## 🎯 Objective
 

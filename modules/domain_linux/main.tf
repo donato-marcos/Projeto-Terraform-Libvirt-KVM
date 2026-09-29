@@ -16,6 +16,7 @@ resource "libvirt_domain" "this" {
     type_arch    = "x86_64"
     type_machine = "q35"
     firmware     = each.value.firmware == "efi" ? "efi" : null
+    loader       = each.value.os_type == "talos" ? "/usr/share/edk2/ovmf/OVMF_CODE.fd" : null
   }
 
   # --- Features ---
@@ -103,6 +104,9 @@ resource "libvirt_domain" "this" {
           network = { network = var.networks_map[net.name].name }
         }
         model = { type = "virtio" }
+        mac = net.mac_address != null ? {
+          address = net.mac_address
+        } : null
         wait_for_ip = (
           !(startswith(net.name, "bridge") || startswith(net.name, "br")) &&
           net.wait_for_lease
