@@ -28,15 +28,18 @@ resource "libvirt_domain" "this" {
       mode    = "custom"
       relaxed = { state = "on" }
       vapic   = { state = "on" }
-      #spinlocks = { state   = "on", retries = 8191 }
+      spinlocks = { state = "on", retries = 8191 }
+      #vendor_id = { state = "on", value = "KVM Hv" } # Apenas Intel
       vp_index = { state = "on" }
       runtime  = { state = "on" }
       synic    = { state = "on" }
-      #stimer = { state = "on" }
+      stimer = { state = "on", direct = { state = "on" } }
       frequencies = { state = "on" }
-      #tlb_flush = { state = "on" }
+      reset = { state = "on" }
+      tlb_flush = { state = "on" }
+      re_enlightenment = { state = "on" }
       ipi   = { state = "on" }
-      #evmcs = { state = "on" }
+      #evmcs = { state = "on" } # Apenas Intel
       avic  = { state = "on" }
     }
   }
@@ -73,6 +76,9 @@ resource "libvirt_domain" "this" {
             name    = "qemu"
             type    = "qcow2"
             discard = "unmap"
+            cache   = "none"
+            io      = "native"
+            #queues  = max(1, floor(each.value.vcpus / 2))
           }
           source = {
             volume = {
@@ -81,8 +87,8 @@ resource "libvirt_domain" "this" {
             }
           }
           target = {
-            dev = "vd${substr("abcdefghijklmnopqrstuvwxyz", i, 1)}"
-            bus = "virtio"
+            dev = "sd${substr("abcdefghijklmnopqrstuvwxyz", i, 1)}"
+            bus = "scsi"
           }
           boot = disk.bootable ? { order = 1 } : null
         }
@@ -100,7 +106,7 @@ resource "libvirt_domain" "this" {
           }
         }
         target = {
-          dev = "sda"
+          dev = "hda"
           bus = "sata"
         }
       }]
@@ -118,6 +124,10 @@ resource "libvirt_domain" "this" {
           network = { network = var.networks_map[net.name].name }
         }
         model = { type = "virtio" }
+        driver = {
+          name = "vhost"
+          queues = each.value.vcpus
+        }
         mac = net.mac_address != null ? {
           address = net.mac_address
         } : null
@@ -139,7 +149,7 @@ resource "libvirt_domain" "this" {
 
     # --- Canais ---
     channels = (
-      each.value.running == true || each.value.graphics != "vnc"
+      each.value.running == true || each.value.graphics == "spice"
     ) ? concat(
       each.value.running == true ? [{
         source = { unix = { mode = "bind" } }
@@ -148,17 +158,24 @@ resource "libvirt_domain" "this" {
           virt_io = { name = "org.qemu.guest_agent.0" }
         }
       }] : [],
-      each.value.graphics != "vnc" ? [{
+      each.value.graphics == "spice" ? [{
         source = { spice_vmc = true }
         target = { virt_io = { name = "com.redhat.spice.0" } }
       }] : []
     ) : null
 
+    # --- Controllers ---
+    controllers = [ {
+      type = "scsi"
+      model = "virtio-scsi"
+      driver = { queues = max(1, floor(each.value.vcpus / 2)) }
+    } ]
+
     # --- Inputs ---
-    inputs = [{
+    inputs = each.value.graphics != "none" ? [{
       type = "tablet"
       bus  = "usb"
-    }]
+    }] : null
 
     # --- TPM  ---qxl
     tpms = each.value.firmware == "efi" ? [{
@@ -169,25 +186,29 @@ resource "libvirt_domain" "this" {
     }] : null
 
     # --- Gráficos ---
-    graphics = each.value.graphics != "vnc" ? [{
-      spice = {
-        auto_port = true
-        image = { compression = "off" }
-      }
-      vnc = null
-    }] : [{
-      vnc = {
-        auto_port = true
-        listen = "127.0.0.1"
-      }
-      spice = null
-    }]
+    graphics = each.value.graphics == "none" ? null : (
+      each.value.graphics != "vnc" ? [{
+        spice = {
+          auto_port = true
+          image = { compression = "off" }
+        }
+        vnc = null
+      }] : [{
+        vnc = {
+          auto_port = true
+          listen = "127.0.0.1"
+        }
+        spice = null
+      }]
+    )
 
     # --- Áudio ---
-    sounds = [{ model = "ich9" }]
+    sounds = each.value.graphics != "none" ? [{
+      model = "ich9" 
+    }] : null
 
     # --- Vídeo ---
-    videos = [{
+    videos = ( each.value.video_model != "none" && each.value.graphics != "none" ) ? [{
       model = {
         type    = each.value.video_model
         primary = "yes"
@@ -196,10 +217,16 @@ resource "libvirt_domain" "this" {
         vram    = "65536"
         vga_mem = "16384"
       }
-    }]
+    }] : null
+
+    vsock = {
+      cid = {
+        auto = "yes"
+      }
+    }
 
     # --- Redirecionamento USB ---
-    redir_devs = each.value.graphics != "vnc" ? [
+    redir_devs = each.value.graphics == "spice" ? [
       {
         bus = "usb"
         source = { spice_vmc = true }

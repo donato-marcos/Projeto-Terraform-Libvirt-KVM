@@ -53,13 +53,34 @@ module "cloudinit" {
 locals {
   linux_vyos_vms = {
     for name, vm in var.vms : name => vm
-    if vm.os_type == "linux" || vm.os_type == "vyos" || vm.os_type == "talos"
+    if vm.os_type == "linux" || vm.os_type == "vyos"
   }
 }
 
 module "domain_linux" {
   source                = "../domain_linux"
   vms                   = local.linux_vyos_vms
+  networks_map          = module.network.networks
+  volumes_map           = module.volume.volumes
+  cloudinit_volumes_map = module.cloudinit.cloudinit_volumes
+  storage_pool          = var.storage_pool
+
+  depends_on = [module.cloudinit]
+}
+
+# -------------------------------------------------
+# 4. Domínios Linux e VyOS
+# -------------------------------------------------
+locals {
+  talos_vms = {
+    for name, vm in var.vms : name => vm
+    if vm.os_type == "talos"
+  }
+}
+
+module "domain_talos" {
+  source                = "../domain_talos"
+  vms                   = local.talos_vms
   networks_map          = module.network.networks
   volumes_map           = module.volume.volumes
   cloudinit_volumes_map = module.cloudinit.cloudinit_volumes

@@ -1,0 +1,38 @@
+network:
+  version: 2
+  ethernets:
+%{ for i, net in networks ~}
+    enp${i+1}s0:
+      dhcp4: ${net.ipv4_address == "dhcp" ? "true" : "false"}
+      dhcp6: ${net.ipv6_address == "dhcp" ? "true" : "false"}
+%{   if net.ipv6_address == "dhcp" || (i == 0 && net.ipv6_gateway == null) ~}
+      accept-ra: true
+%{ else ~}
+      accept-ra: false
+%{   endif ~}
+%{   if (net.ipv4_address != null && net.ipv4_address != "dhcp") || (net.ipv6_address != null && net.ipv6_address != "dhcp") ~}
+      addresses:
+%{     if net.ipv4_address != null && net.ipv4_address != "dhcp" ~}
+        - ${net.ipv4_address}/${net.ipv4_prefix}
+%{     endif ~}
+%{     if net.ipv6_address != null && net.ipv6_address != "dhcp" ~}
+        - ${net.ipv6_address}/${net.ipv6_prefix}
+%{     endif ~}
+%{   endif ~}
+%{   if net.ipv4_gateway != null || net.ipv6_gateway != null ~}
+      routes:
+%{     if net.ipv4_gateway != null ~}
+        - to: 0.0.0.0/0
+          via: ${net.ipv4_gateway}
+%{     endif ~}
+%{     if net.ipv6_gateway != null ~}
+        - to: "::/0"
+          via: ${net.ipv6_gateway}
+          metric: ${100+i}
+%{     endif ~}
+%{   endif ~}
+%{   if length(net.dns_servers) > 0 ~}
+      nameservers:
+        addresses: ${jsonencode(net.dns_servers)}
+%{   endif ~}
+%{ endfor ~}
