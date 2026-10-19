@@ -22,9 +22,13 @@ resource "libvirt_domain" "this" {
   # --- Features ---
   features = {
     acpi    = true
-    apic    = { eoi = "on" }
+    apic    = {}
     smm     = { state = "on" }
     vm_port = { state = "off" }
+    kvm = {
+      poll_control = { state = "on" }
+      pvipi = {  state = "on" }
+    }
   }
 
   # --- CPU ---
@@ -69,7 +73,7 @@ resource "libvirt_domain" "this" {
             }
           }
           target = {
-            dev = "sd${substr("bcdefghijklmnopqrstuvwxyz", i, 1)}"
+            dev = "sd${substr("abcdefghijklmnopqrstuvwxyz", i, 1)}"
             bus = "scsi"
           }
           boot = disk.bootable ? { order = 1 } : null
@@ -89,8 +93,8 @@ resource "libvirt_domain" "this" {
           }
         }
         target = {
-          dev = "sda"
-          bus = "scsi"
+          dev = "hda"
+          bus = "sata"
         }
       }] : []
     )
@@ -124,35 +128,33 @@ resource "libvirt_domain" "this" {
       }
     ]
 
-    # --- Console ---
-    consoles = [{
-      type   = "pty"
-      target = { type = "serial" }
-    }]
+    ## --- Console ---
+    #consoles = [{
+    #  type   = "pty"
+    #  target = { type = "serial" }
+    #}]
 
     # --- Canais ---
-    channels = (
-      each.value.running == true || each.value.graphics == "spice"
-    ) ? concat(
-      each.value.running == true ? [{
+    channels = [{
         source = { unix = { mode = "bind" } }
         target = {
           type    = "virtio"
           virt_io = { name = "org.qemu.guest_agent.0" }
         }
-      }] : [],
-      each.value.graphics == "spice" ? [{
-        source = { spice_vmc = true }
-        target = { virt_io = { name = "com.redhat.spice.0" } }
-      }] : []
-    ) : null
+      }]
 
     # --- Controllers ---
-    controllers = [ {
-      type = "scsi"
-      model = "virtio-scsi"
-      driver = { queues = max(1, floor(each.value.vcpus / 2)) }
-    } ]
+    controllers = [
+      {
+        type = "scsi"
+        model = "virtio-scsi"
+        driver = { queues = max(1, floor(each.value.vcpus / 2)) }
+      },
+      {
+        type = "usb"
+        model = "none"
+      }
+    ]
 
     # --- TPM ---
     tpms = each.value.firmware == "efi" ? [{
@@ -162,10 +164,21 @@ resource "libvirt_domain" "this" {
       }
     }] : null
 
+    # --- Vídeo ---
+    videos = [{
+      model = {
+        type    = "none"
+      }
+    }]
+
     vsock = {
       cid = {
         auto = "yes"
       }
+    }
+
+    mem_balloon = {
+      model = "none"
     }
 
     # --- RNG ---

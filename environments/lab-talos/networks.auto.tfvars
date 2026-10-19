@@ -5,8 +5,8 @@ networks = [
     mode      = "isolated"
     autostart = true
 
-    ipv4_address      = "172.16.1.1"
-    ipv4_prefix       = 24
+    ipv4_address      = null
+    ipv4_prefix       = null
     ipv4_dhcp_enabled = false
     #ipv4_dhcp_start   = "172.16.1.10"
     #ipv4_dhcp_end     = "172.16.1.200"
@@ -42,8 +42,8 @@ networks = [
     #    name = "talos-worker03"
     #  },
     #]
-    ipv6_address      = "fd00:172:16:1::1"
-    ipv6_prefix       = 64
+    ipv6_address      = null
+    ipv6_prefix       = null
     ipv6_dhcp_enabled = false
     #ipv6_dhcp_start   = "fd00:172:16:1::10"
     #ipv6_dhcp_end     = "fd00:172:16:1::200"
@@ -53,11 +53,11 @@ networks = [
     mode      = "isolated"
     autostart = true
 
-    ipv4_address      = "172.16.200.1"
-    ipv4_prefix       = 24
+    ipv4_address      = null
+    ipv4_prefix       = null
     ipv4_dhcp_enabled = false
-    ipv6_address      = "fd00:172:16:200::1"
-    ipv6_prefix       = 64
+    ipv6_address      = null
+    ipv6_prefix       = null
     ipv6_dhcp_enabled = false
   },
   {
@@ -65,11 +65,11 @@ networks = [
     mode      = "isolated"
     autostart = true
 
-    ipv4_address      = "172.16.201.1"
-    ipv4_prefix       = 24
+    ipv4_address      = null
+    ipv4_prefix       = null
     ipv4_dhcp_enabled = false
-    ipv6_address      = "fd00:172:16:201::1"
-    ipv6_prefix       = 64
+    ipv6_address      = null
+    ipv6_prefix       = null
     ipv6_dhcp_enabled = false
   }
 ]

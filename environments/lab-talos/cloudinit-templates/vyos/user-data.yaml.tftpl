@@ -50,8 +50,10 @@ vyos_config_commands:
   
   # Configurar NAT (masquerade) para todas as redes internas
   - set nat source rule 10 outbound-interface name 'eth0'
+  - set nat source rule 10 source address '172.16.1.0/24'
   - set nat source rule 10 translation address 'masquerade'
   - set nat66 source rule 10 outbound-interface name 'eth0'
+  - set nat66 source rule 10 source prefix 'fd00:172:16:1::/64'
   - set nat66 source rule 10 translation address 'masquerade'
 
   # Configurar BGP

@@ -21,7 +21,7 @@ resource "libvirt_domain" "this" {
   # --- Features ---
   features = {
     acpi    = true
-    apic    = { eoi = "on" }
+    apic    = {}
     smm     = { state = "on" }
     vm_port = { state = "off" }
     hyper_v = {
